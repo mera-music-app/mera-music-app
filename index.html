@@ -724,6 +724,7 @@ function handleFiles(fileList) {
   var errors = [];
   var accepted = [];
   files.forEach(function (f) {
+    if (f.size === 0) { errors.push('"' + f.name + '" खाली (0 KB) लग रही है, इसे छोड़ दिया गया।'); return; }
     var ok = (f.type && f.type.indexOf('audio') === 0) || /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|mp4)$/i.test(f.name);
     if (ok) accepted.push(f); else errors.push('"' + f.name + '" ऑडियो फ़ाइल नहीं लगती, इसे छोड़ दिया गया।');
   });
