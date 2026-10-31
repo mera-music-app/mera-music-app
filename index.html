@@ -885,7 +885,10 @@ function init() {
   audio.addEventListener('play', function () { setPlaying(true); });
   audio.addEventListener('pause', function () { setPlaying(false); });
 
-  openIdbStore().catch(makeMemoryStore).then(function (s) {
+  openIdbStore().catch(function () {
+    // पहली बार लोड होने पर कभी-कभी storage तुरंत तैयार नहीं होता — एक बार फिर कोशिश करें
+    return new Promise(function (res) { setTimeout(res, 600); }).then(openIdbStore);
+  }).catch(makeMemoryStore).then(function (s) {
     store = s;
     if (!s.persistent) $('storage-note').classList.remove('visually-hidden');
     return Promise.all([refreshSongs(), refreshPlaylists()]);
