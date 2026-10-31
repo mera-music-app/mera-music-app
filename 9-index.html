@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>मेरा म्यूज़िक ऐप</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root {
+  --page: #ffffff;
+  --ink: #251f21;
+  --ink2: #585254;
+  --hairline: #eae9ea;
+  --teal: #73a89a;
+  --teal-dark: #4d7a6d;
+  --red: #ed313e;
+  --sand: #f4efec;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: "Noto Sans Devanagari", "Nirmala UI", "Mangal", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.page { max-width: 720px; margin: 0 auto; padding: 20px 16px 190px; }
+h1 { font-size: 26px; margin: 8px 0 4px; line-height: 1.25; }
+.intro { color: var(--ink2); margin: 0 0 16px; }
+h2 { font-size: 19px; margin: 24px 0 10px; }
+.note, .warn {
+  border-radius: 12px; padding: 12px 14px; margin: 12px 0; font-size: 14px;
+}
+.note { border-left: 3px solid var(--teal); background: #f6faf9; }
+.warn { background: var(--sand); }
+.warn strong, .note strong { display: block; margin-bottom: 2px; }
+
+.dropzone {
+  border: 2px dashed var(--hairline); border-radius: 16px; padding: 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
+}
+.dropzone.is-over { border-color: var(--teal); }
+.btn {
+  appearance: none; border: 0; border-radius: 8px; font: inherit; font-weight: 600;
+  padding: 12px 20px; min-height: 46px; cursor: pointer;
+  background: var(--ink); color: #fff;
+}
+.btn.secondary { background: none; color: var(--ink); border: 1px solid var(--hairline); }
+.btn:disabled { opacity: .45; cursor: default; }
+.hint { margin: 0; color: var(--ink2); font-size: 13px; }
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.error-text { color: var(--red); font-size: 13px; }
+.caption { color: var(--ink2); font-size: 12.5px; }
+
+.tabs { display: flex; gap: 20px; border-bottom: 1px solid var(--hairline); margin: 20px 0 14px; }
+.tab {
+  appearance: none; background: none; border: 0; padding: 10px 0; font: inherit;
+  color: var(--ink2); cursor: pointer; min-height: 44px;
+}
+.tab.is-current { color: var(--ink); font-weight: 600; box-shadow: inset 0 -2px 0 var(--teal); }
+
+.field { display: block; margin-bottom: 12px; }
+.field span { display: block; font-size: 13px; color: var(--ink2); margin-bottom: 4px; }
+.field input[type="text"], .field input[type="search"] {
+  width: 100%; font: inherit; padding: 11px 12px; min-height: 46px;
+  border: 1px solid var(--hairline); border-radius: 8px; background: #fff; color: var(--ink);
+}
+
+.song-list { list-style: none; margin: 0; padding: 0; }
+.song-list.in-playlist { margin-top: 6px; border-top: 1px solid var(--hairline); }
+.song-row {
+  position: relative; display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; border-bottom: 1px solid var(--hairline); flex-wrap: wrap;
+}
+.song-play {
+  flex: 0 0 auto; width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid var(--hairline); background: #fff; color: var(--ink);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.song-row.is-active .song-play { background: var(--teal); border-color: var(--teal); color: #fff; }
+.song-row.is-active .song-name { color: var(--teal-dark); }
+.song-meta { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.song-name { font-weight: 600; overflow-wrap: anywhere; }
+.song-sub { color: var(--ink2); font-size: 12px; line-height: 18px; }
+
+.icon-btn {
+  position: relative; flex: 0 0 auto; width: 44px; height: 44px; border: 0; background: none;
+  color: var(--ink2); display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px; cursor: pointer;
+}
+.icon-btn:hover { color: var(--ink); }
+.icon-btn:disabled { color: #c0bebf; cursor: default; }
+.icon-btn.danger:hover { color: var(--red); }
+.icon-btn.toggled { color: var(--teal-dark); }
+.icon-btn.big { width: 52px; height: 52px; border-radius: 50%; background: var(--teal); color: #fff; }
+.icon-btn.big:hover { color: #fff; }
+.repeat-one { position: absolute; top: 8px; right: 8px; font-size: 10px; font-weight: 700; }
+
+button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--teal); outline-offset: 2px;
+}
+
+.picker {
+  flex-basis: 100%; display: flex; flex-direction: column; gap: 2px;
+  border: 1px solid var(--hairline); border-radius: 12px; padding: 8px; margin-top: 4px;
+}
+.picker-item {
+  appearance: none; background: none; border: 0; font: inherit; text-align: left;
+  padding: 10px 12px; min-height: 44px; border-radius: 8px; cursor: pointer; color: var(--ink);
+}
+.picker-item.is-in { color: var(--teal-dark); font-weight: 600; }
+
+.pl-create { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.pl-create .field { flex: 1 1 200px; margin-bottom: 0; }
+.pl-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pl-card { border: 1px solid var(--hairline); border-radius: 12px; padding: 6px 12px 10px; }
+.pl-head { display: flex; align-items: center; gap: 6px; }
+.pl-title {
+  appearance: none; background: none; border: 0; font: inherit; font-weight: 600;
+  color: var(--ink); padding: 10px 0; min-height: 44px; cursor: pointer; text-align: left;
+  overflow-wrap: anywhere; text-decoration: underline; text-underline-offset: 3px;
+}
+.pl-count { color: var(--ink2); font-size: 12px; margin-left: auto; white-space: nowrap; }
+
+.empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 12px 0 20px; }
+.empty-art { width: 180px; max-width: 60%; border-radius: 16px; }
+.empty-title { margin: 8px 0 0; font-weight: 600; }
+.empty-sub { margin: 0; color: var(--ink2); font-size: 13px; }
+
+.player-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; background: var(--page);
+  border-top: 1px solid var(--hairline); z-index: 20;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.player-inner { max-width: 720px; margin: 0 auto; padding: 8px 16px 10px; display: flex; flex-direction: column; gap: 4px; }
+.player-top { display: flex; align-items: center; gap: 10px; }
+.player-icon { color: var(--teal-dark); display: inline-flex; flex: 0 0 auto; }
+.player-meta { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.player-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.player-sub { color: var(--ink2); font-size: 12px; line-height: 18px; }
+.player-controls { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
+.player-seek { display: flex; align-items: center; gap: 10px; }
+.time-label { color: var(--ink2); font-size: 12px; min-width: 36px; text-align: center; font-variant-numeric: tabular-nums; }
+.seek { flex: 1 1 auto; appearance: none; height: 4px; border-radius: 2px; background: var(--hairline); cursor: pointer; }
+.seek::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--teal); border: none; }
+.seek::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--teal); border: none; }
+.player-volume { display: flex; align-items: center; gap: 10px; max-width: 340px; }
+.player-volume .seek { max-width: 220px; }
+@media (max-width: 600px) { .player-volume { display: none; } }
+
+@media (max-width: 600px) {
+  .player-icon { display: none; }
+  .player-inner { padding-left: 10px; padding-right: 10px; }
+  .player-controls .icon-btn { width: 40px; height: 44px; }
+  .player-controls .icon-btn.big { width: 48px; height: 48px; }
+  .player-top { gap: 6px; }
+  .player-controls { gap: 0; }
+}
+
+
+.closing { color: var(--ink2); font-size: 12.5px; margin-top: 24px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>मेरा म्यूज़िक ऐप</h1>
+    <p class="intro">अपने गाने अपलोड करें, खोजें, प्लेलिस्ट बनाएँ और सुनें। गाने सिर्फ़ इसी डिवाइस के ब्राउज़र में रहते हैं।</p>
+  </header>
+
+  <div id="storage-note" class="warn visually-hidden" role="note">
+    <strong>गाने सहेजे नहीं जा सकेंगे</strong>
+    इस ब्राउज़र में गाने सहेजने की सुविधा नहीं मिली — पेज बंद या रीफ़्रेश होते ही लाइब्रेरी हट जाएगी।
+  </div>
+
+  <main>
+    <section aria-labelledby="upload-h">
+      <h2 id="upload-h">गाने जोड़ें</h2>
+      <div class="dropzone" id="dropzone">
+        <button type="button" class="btn" id="upload-btn">गाने अपलोड करें</button>
+        <p class="hint">या फ़ाइलें यहाँ खींचकर छोड़ें। MP3, M4A, WAV, OGG, FLAC — एक साथ कई फ़ाइलें चुन सकते हैं।</p>
+        <input type="file" id="file-input" multiple accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.oga,.opus,.flac" class="visually-hidden" aria-label="ऑडियो फ़ाइलें चुनें">
+      </div>
+      <p id="upload-status" class="caption" aria-live="polite"></p>
+      <p id="storage-estimate" class="caption"></p>
+    </section>
+
+    <nav class="tabs" aria-label="भाग चुनें">
+      <button type="button" class="tab is-current" id="tab-library" aria-current="page">लाइब्रेरी</button>
+      <button type="button" class="tab" id="tab-playlists">प्लेलिस्ट (<span id="pl-count">0</span>)</button>
+    </nav>
+
+    <section id="section-library" aria-labelledby="lib-h">
+      <h2 id="lib-h">लाइब्रेरी</h2>
+      <label class="field"><span>गाने खोजें</span><input type="search" id="search" autocomplete="off"></label>
+      <div id="library-content"></div>
+    </section>
+
+    <section id="section-playlists" class="visually-hidden" aria-labelledby="pl-h">
+      <h2 id="pl-h">प्लेलिस्ट</h2>
+      <div class="pl-create">
+        <label class="field"><span>नई प्लेलिस्ट का नाम</span><input type="text" id="new-pl-name" autocomplete="off"></label>
+        <button type="button" class="btn secondary" id="create-pl" disabled>बनाएँ</button>
+      </div>
+      <div id="playlists-content"></div>
+    </section>
+
+    <section aria-labelledby="info-h">
+      <h2 id="info-h">जानकारी</h2>
+      <div class="note"><strong>गाने कहाँ रहते हैं</strong>आपके गाने किसी सर्वर पर अपलोड नहीं होते — वे सिर्फ़ इसी डिवाइस के ब्राउज़र में सहेजे रहते हैं। दूसरे फ़ोन या कंप्यूटर पर यह लाइब्रेरी अपने-आप नहीं दिखेगी।</div>
+      <div class="warn"><strong>सावधानी</strong>ब्राउज़र का डेटा साफ़ करने या ऐप हटाने पर गाने मिट सकते हैं। ऊपर दिखाई गई ब्राउज़र की जगह एक अनुमान है, गारंटीड आरक्षित जगह नहीं — फ़ोन की जगह कम होने पर ब्राउज़र सहेजा डेटा हटा भी सकता है। अपनी मूल फ़ाइलों की एक प्रति कहीं और सुरक्षित रखें।</div>
+      <div class="note"><strong>बैकग्राउंड में सुनना</strong>फ़ोन लॉक होने पर भी गाना चलता रह सकता है — यह आपके ब्राउज़र पर निर्भर करता है। लॉक स्क्रीन पर प्ले/पॉज़ के बटन भी मिल सकते हैं।</div>
+    </section>
+
+    <p class="closing">गाने किसी सर्वर पर नहीं भेए गए; सब कुछ इसी डिवाइस पर रहता है।</p>
+  </main>
+</div>
+
+<p id="live-region" class="visually-hidden" role="status" aria-live="polite"></p>
+
+<div id="player-bar" class="player-bar visually-hidden" role="region" aria-label="म्यूज़िक प्लेयर">
+  <div class="player-inner">
+    <div class="player-top">
+      <span class="player-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M9 18V6l11-2v12" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" fill="currentColor"/><circle cx="17.5" cy="16" r="2.5" fill="currentColor"/></svg>
+      </span>
+      <div class="player-meta">
+        <span class="player-name" id="player-name"></span>
+        <span class="player-sub" id="player-sub"></span>
+      </div>
+      <div class="player-controls" role="group" aria-label="प्लेबैक नियंत्रण">
+        <button type="button" class="icon-btn" id="btn-shuffle" aria-label="शफ़ल चालू करें" aria-pressed="false"></button>
+        <button type="button" class="icon-btn" id="btn-prev" aria-label="पिछला गाना"></button>
+        <button type="button" class="icon-btn big" id="btn-play" aria-label="चलाएँ"></button>
+        <button type="button" class="icon-btn" id="btn-next" aria-label="अगला गाना"></button>
+        <button type="button" class="icon-btn" id="btn-repeat" aria-label="दोहराव बदलें" aria-pressed="false"></button>
+      </div>
+    </div>
+    <div class="player-seek">
+      <span class="time-label" id="time-now" aria-hidden="true">0:00</span>
+      <input type="range" class="seek" id="seek" aria-label="गाने में आगे-पीछे जाएँ" min="0" max="0" step="1" value="0" disabled>
+      <span class="time-label" id="time-total" aria-hidden="true">0:00</span>
+    </div>
+    <div class="player-volume">
+      <label for="volume" class="time-label">आवाज़</label>
+      <input type="range" class="seek" id="volume" min="0" max="100" step="1" value="100">
+    </div>
+  </div>
+</div>
+
+<audio id="audio" preload="metadata"></audio>
+
+<script>
+(function () {
+'use strict';
+
+var ICONS = {
+  play: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>',
+  next: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M6 5v14l8.5-7zM16 5h2v14h-2z" fill="currentColor"/></svg>',
+  prev: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M9.5 12 18 5v14zM6 5h2v14H6z" fill="currentColor"/></svg>',
+  shuffle: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M3 6h3.5l7 9.5H20M20 6h-3.5l-7 9.5H3M20 6l-2.2-2.2M20 6l-2.2 2.2M20 15.5l-2.2-2.2M20 15.5l-2.2 2.2" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  repeat: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" fill="currentColor"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V5h6v2m-8 0 1 13h8l1-13" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+
+function $(id) { return document.getElementById(id); }
+function formatTime(sec) {
+  if (!isFinite(sec) || sec <= 0) return '0:00';
+  var m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
+function formatSize(bytes) {
+  if (!isFinite(bytes) || bytes <= 0) return '0 MB';
+  var mb = bytes / 1048576;
+  if (mb >= 1024) return (mb / 1024).toFixed(1) + ' GB';
+  if (mb >= 1) return mb.toFixed(mb < 10 ? 1 : 0) + ' MB';
+  return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+}
+function cleanName(name) {
+  var dot = name.lastIndexOf('.');
+  var base = dot > 0 ? name.slice(0, dot) : name;
+  base = base.replace(/_+/g, ' ').trim();
+  return base || name;
+}
+var idCounter = 0;
+function newId() {
+  idCounter += 1;
+  return Date.now().toString(36) + '-' + idCounter.toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+/* ---------- storage: IndexedDB, with in-memory fallback ---------- */
+var store = null;
+
+function makeMemoryStore() {
+  var songs = new Map(), blobs = new Map(), playlists = new Map();
+  return Promise.resolve({
+    persistent: false,
+    getSongs: function () { return Promise.resolve(Array.from(songs.values()).sort(function (a, b) { return b.addedAt - a.addedAt; })); },
+    getPlaylists: function () { return Promise.resolve(Array.from(playlists.values()).sort(function (a, b) { return a.createdAt - b.createdAt; })); },
+    getBlob: function (id) { return Promise.resolve(blobs.get(id)); },
+    addSong: function (meta, blob) { songs.set(meta.id, meta); blobs.set(meta.id, blob); return Promise.resolve(); },
+    deleteSong: function (id) {
+      songs.delete(id); blobs.delete(id);
+      playlists.forEach(function (pl) { pl.songIds = pl.songIds.filter(function (x) { return x !== id; }); });
+      return Promise.resolve();
+    },
+    putPlaylist: function (pl) { playlists.set(pl.id, pl); return Promise.resolve(); },
+    deletePlaylist: function (id) { playlists.delete(id); return Promise.resolve(); }
+  });
+}
+
+function openIdbStore() {
+  return new Promise(function (resolve, reject) {
+    if (!window.indexedDB) { reject(new Error('no idb')); return; }
+    var req = indexedDB.open('mera-music-app', 1);
+    req.onupgradeneeded = function () {
+      var db = req.result;
+      if (!db.objectStoreNames.contains('songs')) db.createObjectStore('songs', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('audio')) db.createObjectStore('audio');
+      if (!db.objectStoreNames.contains('playlists')) db.createObjectStore('playlists', { keyPath: 'id' });
+    };
+    req.onsuccess = function () { resolve(req.result); };
+    req.onerror = function () { reject(req.error || new Error('idb error')); };
+    req.onblocked = function () { reject(new Error('idb blocked')); };
+  }).then(function (db) {
+    function reqP(req) {
+      return new Promise(function (res, rej) {
+        req.onsuccess = function () { res(req.result); };
+        req.onerror = function () { rej(req.error || new Error('storage error')); };
+      });
+    }
+    function txDone(t) {
+      return new Promise(function (res, rej) {
+        t.oncomplete = function () { res(); };
+        t.onerror = function () { rej(t.error || new Error('storage error')); };
+        t.onabort = function () { rej(t.error || new Error('storage aborted')); };
+      });
+    }
+    function getAllSongs() {
+      return reqP(db.transaction('songs', 'readonly').objectStore('songs').getAll()).then(function (rows) {
+        return (rows || []).sort(function (a, b) { return b.addedAt - a.addedAt; });
+      });
+    }
+    function getAllPlaylists() {
+      return reqP(db.transaction('playlists', 'readonly').objectStore('playlists').getAll()).then(function (rows) {
+        return (rows || []).sort(function (a, b) { return a.createdAt - b.createdAt; });
+      });
+    }
+    function putPlaylist(pl) {
+      return reqP(db.transaction('playlists', 'readwrite').objectStore('playlists').put(pl)).then(function () {});
+    }
+    return {
+      persistent: true,
+      getSongs: getAllSongs,
+      getPlaylists: getAllPlaylists,
+      getBlob: function (id) { return reqP(db.transaction('audio', 'readonly').objectStore('audio').get(id)); },
+      addSong: function (meta, blob) {
+        var t = db.transaction(['songs', 'audio'], 'readwrite');
+        t.objectStore('songs').put(meta);
+        t.objectStore('audio').put(blob, meta.id);
+        return txDone(t);
+      },
+      deleteSong: function (id) {
+        var t = db.transaction(['songs', 'audio'], 'readwrite');
+        t.objectStore('songs').delete(id);
+        t.objectStore('audio').delete(id);
+        return txDone(t).then(getAllPlaylists).then(function (pls) {
+          var chain = Promise.resolve();
+          pls.forEach(function (pl) {
+            if (pl.songIds.indexOf(id) >= 0) {
+              pl.songIds = pl.songIds.filter(function (x) { return x !== id; });
+              chain = chain.then(function () { return putPlaylist(pl); });
+            }
+          });
+          return chain;
+        });
+      },
+      putPlaylist: putPlaylist,
+      deletePlaylist: function (id) {
+        return reqP(db.transaction('playlists', 'readwrite').objectStore('playlists').delete(id)).then(function () {});
+      }
+    };
+  });
+}
+
+/* ---------- app state ---------- */
+var songs = [];
+var playlists = [];
+var queue = [];
+var qIndex = -1;
+var playing = false;
+var repeat = 'off';
+var shuffle = false;
+var pickerFor = null;
+var openPlaylistId = null;
+var currentBlobUrl = null;
+
+var audio = $('audio');
+
+function currentId() { return qIndex >= 0 && qIndex < queue.length ? queue[qIndex] : null; }
+function findSong(id) { for (var i = 0; i < songs.length; i++) if (songs[i].id === id) return songs[i]; return null; }
+
+function live(msg) { $('live-region').textContent = msg; }
+
+function refreshSongs() {
+  return store.getSongs().then(function (s) { songs = s; renderLibrary(); renderPlaylists(); });
+}
+function refreshPlaylists() {
+  return store.getPlaylists().then(function (p) { playlists = p; renderPlaylists(); $('pl-count').textContent = String(p.length); });
+}
+function refreshEstimate() {
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      navigator.storage.estimate().then(function (e) {
+        if (e && e.quota) {
+          $('storage-estimate').textContent = 'इस डिवाइस पर ब्राउज़र स्टोरेज: ' + formatSize(e.usage || 0) + ' उपयोग · कुल लगभग ' + formatSize(e.quota) + ' (अनुमानित, गारंटीड नहीं)';
+        }
+      }).catch(function () {});
+    }
+  } catch (e) {}
+}
+
+/* ---------- rendering ---------- */
+function el(tag, cls, text) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+function iconButton(icon, label, extraCls) {
+  var b = el('button', 'icon-btn' + (extraCls ? ' ' + extraCls : ''));
+  b.type = 'button';
+  b.innerHTML = icon;
+  b.setAttribute('aria-label', label);
+  return b;
+}
+
+function songRow(s, contextIds, inPlaylist) {
+  var li = el('li', 'song-row' + (s.id === currentId() ? ' is-active' : ''));
+  var isCurrent = s.id === currentId();
+  var playBtn = el('button', 'song-play');
+  playBtn.type = 'button';
+  playBtn.innerHTML = isCurrent && playing ? ICONS.pause : ICONS.play;
+  playBtn.setAttribute('aria-label', isCurrent && playing ? '"' + s.name + '" रोकें' : '"' + s.name + '" चलाएँ');
+  playBtn.setAttribute('aria-pressed', isCurrent && playing ? 'true' : 'false');
+  playBtn.addEventListener('click', function () { playInContext(s.id, contextIds); });
+  li.appendChild(playBtn);
+
+  var meta = el('div', 'song-meta');
+  meta.appendChild(el('span', 'song-name', s.name));
+  meta.appendChild(el('span', 'song-sub', inPlaylist ? formatTime(s.duration) : formatTime(s.duration) + ' · ' + formatSize(s.size)));
+  li.appendChild(meta);
+
+  if (inPlaylist) {
+    var rm = iconButton(ICONS.trash, '"' + s.name + '" को इस प्लेलिस्ट से हटाएँ', 'danger');
+    rm.addEventListener('click', function () { toggleInPlaylist(inPlaylist, s.id); });
+    li.appendChild(rm);
+  } else {
+    var add = iconButton(ICONS.plus, '"' + s.name + '" को प्लेलिस्ट में जोड़ें');
+    add.setAttribute('aria-expanded', pickerFor === s.id ? 'true' : 'false');
+    add.addEventListener('click', function () {
+      pickerFor = pickerFor === s.id ? null : s.id;
+      renderLibrary();
+    });
+    li.appendChild(add);
+
+    var del = iconButton(ICONS.trash, '"' + s.name + '" हटाएँ', 'danger');
+    del.addEventListener('click', function () { removeSong(s); });
+    li.appendChild(del);
+
+    if (pickerFor === s.id) {
+      var picker = el('div', 'picker');
+      picker.setAttribute('role', 'group');
+      picker.setAttribute('aria-label', 'प्लेलिस्ट चुनें');
+      if (playlists.length === 0) {
+        picker.appendChild(el('p', 'empty-sub', 'पहले "प्लेलिस्ट" भाग में एक प्लेलिस्ट बनाएँ।'));
+      } else {
+        playlists.forEach(function (pl) {
+          var has = pl.songIds.indexOf(s.id) >= 0;
+          var item = el('button', 'picker-item' + (has ? ' is-in' : ''), pl.name + (has ? ' ✓' : ''));
+          item.type = 'button';
+          item.setAttribute('aria-pressed', has ? 'true' : 'false');
+          item.addEventListener('click', function () { toggleInPlaylist(pl, s.id); });
+          picker.appendChild(item);
+        });
+      }
+      li.appendChild(picker);
+    }
+  }
+  return li;
+}
+
+function renderLibrary() {
+  var box = $('library-content');
+  box.innerHTML = '';
+  var q = $('search').value.trim().toLowerCase();
+  var visible = q ? songs.filter(function (s) { return s.name.toLowerCase().indexOf(q) >= 0; }) : songs;
+  if (songs.length === 0) {
+    var empty = el('div', 'empty-state');
+    var img = document.createElement('img');
+    img.src = 'hero.jpg';
+    img.alt = 'हेडफ़ोन और रिकॉर्ड का चित्र';
+    img.className = 'empty-art';
+    empty.appendChild(img);
+    empty.appendChild(el('p', 'empty-title', 'अभी कोई गाना नहीं है'));
+    empty.appendChild(el('p', 'empty-sub', 'ऊपर "गाने अपलोड करें" दबाकर अपनी पसंद के गाने जोड़ें।'));
+    box.appendChild(empty);
+    return;
+  }
+  if (visible.length === 0) {
+    box.appendChild(el('p', 'empty-sub', '"' + $('search').value.trim() + '" से कोई गाना नहीं मिला।'));
+    return;
+  }
+  var ul = el('ul', 'song-list');
+  ul.setAttribute('aria-label', 'गानों की सूची');
+  var ids = visible.map(function (s) { return s.id; });
+  visible.forEach(function (s) { ul.appendChild(songRow(s, ids, null)); });
+  box.appendChild(ul);
+}
+
+function renderPlaylists() {
+  var box = $('playlists-content');
+  box.innerHTML = '';
+  $('pl-count').textContent = String(playlists.length);
+  if (playlists.length === 0) {
+    box.appendChild(el('p', 'empty-sub', 'अभी कोई प्लेलिस्ट नहीं है। ऊपर नाम लिखकर पहली प्लेलिस्ट बनाएँ, फिर लाइब्रेरी में + से गाने जोड़ें।'));
+    return;
+  }
+  var ul = el('ul', 'pl-list');
+  ul.setAttribute('aria-label', 'प्लेलिस्टों की सूची');
+  playlists.forEach(function (pl) {
+    var ids = pl.songIds.filter(function (id) { return !!findSong(id); });
+    var li = el('li', 'pl-card');
+    var head = el('div', 'pl-head');
+    var title = el('button', 'pl-title', pl.name);
+    title.type = 'button';
+    title.setAttribute('aria-expanded', openPlaylistId === pl.id ? 'true' : 'false');
+    title.addEventListener('click', function () {
+      openPlaylistId = openPlaylistId === pl.id ? null : pl.id;
+      renderPlaylists();
+    });
+    head.appendChild(title);
+    head.appendChild(el('span', 'pl-count', ids.length + ' गाने'));
+    var playBtn = iconButton(ICONS.play, 'प्लेलिस्ट "' + pl.name + '" चलाएँ');
+    playBtn.disabled = ids.length === 0;
+    playBtn.addEventListener('click', function () {
+      if (ids.length) playInContext(ids[0], ids);
+    });
+    head.appendChild(playBtn);
+    var del = iconButton(ICONS.trash, 'प्लेलिस्ट "' + pl.name + '" हटाएँ', 'danger');
+    del.addEventListener('click', function () { removePlaylist(pl); });
+    head.appendChild(del);
+    li.appendChild(head);
+
+    if (openPlaylistId === pl.id) {
+      if (ids.length === 0) {
+        li.appendChild(el('p', 'empty-sub', 'इस प्लेलिस्ट में अभी कोई गाना नहीं है। लाइब्रेरी में किसी गाने के साथ + दबाएँ।'));
+      } else {
+        var sub = el('ul', 'song-list in-playlist');
+        sub.setAttribute('aria-label', 'प्लेलिस्ट "' + pl.name + '" के गाने');
+        ids.forEach(function (id) {
+          var s = findSong(id);
+          if (s) sub.appendChild(songRow(s, ids, pl));
+        });
+        li.appendChild(sub);
+      }
+    }
+    ul.appendChild(li);
+  });
+  box.appendChild(ul);
+}
+
+function renderPlayer() {
+  var id = currentId();
+  var s = id ? findSong(id) : null;
+  var bar = $('player-bar');
+  if (!s) { bar.classList.add('visually-hidden'); return; }
+  bar.classList.remove('visually-hidden');
+  $('player-name').textContent = s.name;
+  $('player-sub').textContent = queue.length ? 'गाना ' + (qIndex + 1) + ' / ' + queue.length : '';
+  $('btn-play').innerHTML = playing ? ICONS.pause : ICONS.play;
+  $('btn-play').setAttribute('aria-label', playing ? 'रोकें' : 'चलाएँ');
+  $('btn-shuffle').className = 'icon-btn' + (shuffle ? ' toggled' : '');
+  $('btn-shuffle').setAttribute('aria-pressed', shuffle ? 'true' : 'false');
+  $('btn-shuffle').setAttribute('aria-label', shuffle ? 'शफ़ल बंद करें' : 'शफ़ल चालू करें');
+  var rpt = repeat !== 'off';
+  $('btn-repeat').className = 'icon-btn' + (rpt ? ' toggled' : '');
+  $('btn-repeat').setAttribute('aria-pressed', rpt ? 'true' : 'false');
+  var rl = repeat === 'off' ? 'दोहराव बंद' : repeat === 'all' ? 'सब दोहराएँ' : 'एक गाना दोहराएँ';
+  $('btn-repeat').setAttribute('aria-label', 'दोहराव: ' + rl + '। बदलने के लिए दबाएँ');
+  $('btn-repeat').innerHTML = ICONS.repeat + (repeat === 'one' ? '<span class="repeat-one" aria-hidden="true">1</span>' : '');
+  renderLibraryActive();
+}
+
+function renderLibraryActive() {
+  var id = currentId();
+  document.querySelectorAll('.song-row').forEach(function (row) { row.classList.remove('is-active'); });
+}
+
+/* ---------- playback ---------- */
+function loadCurrent(autoplay) {
+  var id = currentId();
+  if (!id) return;
+  store.getBlob(id).then(function (blob) {
+    if (!blob || id !== currentId()) return;
+    if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+    currentBlobUrl = URL.createObjectURL(blob);
+    audio.src = currentBlobUrl;
+    audio.volume = $('volume').value / 100;
+    if (autoplay !== false) {
+      audio.play().then(function () { setPlaying(true); }).catch(function () { setPlaying(false); });
+    }
+    updateMediaSession();
+  }).catch(function () { setPlaying(false); });
+}
+
+function setPlaying(v) {
+  playing = v;
+  renderPlayer();
+  var s = findSong(currentId());
+  if (s) live((playing ? 'चल रहा है: ' : 'रुका है: ') + s.name);
+}
+
+function playInContext(id, contextIds) {
+  var idx = contextIds.indexOf(id);
+  if (idx < 0) return;
+  if (id === currentId()) { togglePlay(); return; }
+  queue = contextIds.slice();
+  qIndex = idx;
+  loadCurrent(true);
+  renderPlayer();
+  renderLibrary();
+  if (openPlaylistId) renderPlaylists();
+}
+
+function togglePlay() {
+  if (!currentId()) {
+    if (songs.length) playInContext(songs[0].id, songs.map(function (s) { return s.id; }));
+    return;
+  }
+  if (audio.paused) {
+    audio.play().then(function () { setPlaying(true); }).catch(function () { setPlaying(false); });
+  } else {
+    audio.pause();
+    setPlaying(false);
+  }
+}
+
+function nextSong(manual) {
+  if (!queue.length) return;
+  if (shuffle && queue.length > 1) {
+    var i = qIndex, guard = 0;
+    while (i === qIndex && guard < 50) { i = Math.floor(Math.random() * queue.length); guard += 1; }
+    qIndex = i;
+  } else if (qIndex + 1 < queue.length) {
+    qIndex += 1;
+  } else if (repeat === 'all' || manual) {
+    qIndex = 0;
+  } else {
+    setPlaying(false);
+    return;
+  }
+  loadCurrent(true);
+  renderPlayer();
+  renderLibrary();
+}
+
+function prevSong() {
+  if (audio.currentTime > 3) { audio.currentTime = 0; return; }
+  if (!queue.length) return;
+  qIndex = qIndex > 0 ? qIndex - 1 : queue.length - 1;
+  loadCurrent(true);
+  renderPlayer();
+  renderLibrary();
+}
+
+function updateMediaSession() {
+  if (!('mediaSession' in navigator)) return;
+  try {
+    var s = findSong(currentId());
+    if (s) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: s.name,
+        artist: 'मेरी लाइब्रेरी',
+        album: 'मेरा म्यूज़िक ऐप'
+      });
+    }
+    navigator.mediaSession.setActionHandler('play', togglePlay);
+    navigator.mediaSession.setActionHandler('pause', togglePlay);
+    navigator.mediaSession.setActionHandler('previoustrack', prevSong);
+    navigator.mediaSession.setActionHandler('nexttrack', function () { nextSong(true); });
+  } catch (e) {}
+}
+
+/* ---------- uploads ---------- */
+function probeDuration(file) {
+  return new Promise(function (resolve) {
+    var url = URL.createObjectURL(file);
+    var a = new Audio();
+    var settled = false;
+    function done(v) { if (!settled) { settled = true; URL.revokeObjectURL(url); resolve(v); } }
+    var timer = setTimeout(function () { done(0); }, 8000);
+    a.preload = 'metadata';
+    a.onloadedmetadata = function () { clearTimeout(timer); done(isFinite(a.duration) ? a.duration : 0); };
+    a.onerror = function () { clearTimeout(timer); done(0); };
+    a.src = url;
+  });
+}
+
+function handleFiles(fileList) {
+  if (!store) { $('upload-status').textContent = 'ऐप अभी तैयार हो रहा है। एक पल रुककर फिर कोशिश करें।'; return; }
+  var files = Array.prototype.slice.call(fileList);
+  if (!files.length) return;
+  var errors = [];
+  var accepted = [];
+  files.forEach(function (f) {
+    var ok = (f.type && f.type.indexOf('audio') === 0) || /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|mp4)$/i.test(f.name);
+    if (ok) accepted.push(f); else errors.push('"' + f.name + '" ऑडियो फ़ाइल नहीं लगती, इसे छोड़ दिया गया।');
+  });
+  var added = 0;
+  var i = 0;
+  function step() {
+    if (i >= accepted.length) {
+      $('upload-status').innerHTML = '';
+      errors.forEach(function (m) {
+        var p = el('span', 'error-text', m);
+        $('upload-status').appendChild(p);
+        $('upload-status').appendChild(document.createElement('br'));
+      });
+      refreshSongs().then(function () {
+        refreshEstimate();
+        if (added > 0) live(added === 1 ? '1 गाना जुड़ गया।' : added + ' गाने जुड़ गए।');
+      });
+      $('file-input').value = '';
+      return;
+    }
+    var f = accepted[i];
+    $('upload-status').textContent = 'जुड़ रहा है ' + (i + 1) + '/' + accepted.length + ': ' + f.name;
+    probeDuration(f).then(function (duration) {
+      var meta = {
+        id: newId(),
+        name: cleanName(f.name),
+        size: f.size,
+        duration: duration,
+        addedAt: Date.now(),
+        type: f.type || 'audio'
+      };
+      return store.addSong(meta, f).then(function () { added += 1; }).catch(function () {
+        errors.push('"' + f.name + '" सहेजी नहीं जा सकी — फ़ोन की जगह कम हो सकती है।');
+      });
+    }).then(function () { i += 1; step(); });
+  }
+  step();
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) {}
+}
+
+function removeSong(s) {
+  if (!window.confirm('"' + s.name + '" हटा दें?')) return;
+  if (currentId() === s.id) {
+    audio.pause();
+    audio.removeAttribute('src');
+    audio.load();
+    if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
+    queue = []; qIndex = -1;
+    setPlaying(false);
+  }
+  store.deleteSong(s.id).then(function () {
+    return Promise.all([refreshSongs(), refreshPlaylists()]);
+  }).then(function () {
+    refreshEstimate();
+    renderPlayer();
+    live('"' + s.name + '" हटा दिया गया।');
+  });
+}
+
+function createPlaylist() {
+  var name = $('new-pl-name').value.trim();
+  if (!name) return;
+  store.putPlaylist({ id: newId(), name: name, createdAt: Date.now(), songIds: [] }).then(function () {
+    $('new-pl-name').value = '';
+    $('create-pl').disabled = true;
+    refreshPlaylists();
+    live('प्लेलिस्ट "' + name + '" बन गई।');
+  });
+}
+
+function toggleInPlaylist(pl, songId) {
+  var has = pl.songIds.indexOf(songId) >= 0;
+  pl.songIds = has ? pl.songIds.filter(function (x) { return x !== songId; }) : pl.songIds.concat([songId]);
+  store.putPlaylist(pl).then(function () {
+    return refreshPlaylists();
+  }).then(function () {
+    renderLibrary();
+    live(has ? '"' + pl.name + '" से हटाया गया।' : '"' + pl.name + '" में जोड़ा गया।');
+  });
+}
+
+function removePlaylist(pl) {
+  if (!window.confirm('प्लेलिस्ट "' + pl.name + '" हटा दें? गाने लाइब्रेरी में बने रहेंगे।')) return;
+  store.deletePlaylist(pl.id).then(function () {
+    if (openPlaylistId === pl.id) openPlaylistId = null;
+    refreshPlaylists();
+  });
+}
+
+/* ---------- wiring ---------- */
+function showTab(which) {
+  var lib = which === 'library';
+  $('tab-library').className = 'tab' + (lib ? ' is-current' : '');
+  $('tab-playlists').className = 'tab' + (!lib ? ' is-current' : '');
+  if (lib) { $('tab-library').setAttribute('aria-current', 'page'); $('tab-playlists').removeAttribute('aria-current'); }
+  else { $('tab-playlists').setAttribute('aria-current', 'page'); $('tab-library').removeAttribute('aria-current'); }
+  $('section-library').classList.toggle('visually-hidden', !lib);
+  $('section-playlists').classList.toggle('visually-hidden', lib);
+}
+
+function init() {
+  $('btn-shuffle').innerHTML = ICONS.shuffle;
+  $('btn-prev').innerHTML = ICONS.prev;
+  $('btn-play').innerHTML = ICONS.play;
+  $('btn-next').innerHTML = ICONS.next;
+  $('btn-repeat').innerHTML = ICONS.repeat;
+
+  $('upload-btn').addEventListener('click', function () { $('file-input').click(); });
+  $('file-input').addEventListener('change', function () { handleFiles($('file-input').files); });
+  var dz = $('dropzone');
+  dz.addEventListener('dragover', function (e) { e.preventDefault(); dz.classList.add('is-over'); });
+  dz.addEventListener('dragleave', function () { dz.classList.remove('is-over'); });
+  dz.addEventListener('drop', function (e) {
+    e.preventDefault(); dz.classList.remove('is-over');
+    if (e.dataTransfer && e.dataTransfer.files) handleFiles(e.dataTransfer.files);
+  });
+
+  $('tab-library').addEventListener('click', function () { showTab('library'); });
+  $('tab-playlists').addEventListener('click', function () { showTab('playlists'); });
+  $('search').addEventListener('input', renderLibrary);
+  $('new-pl-name').addEventListener('input', function () { $('create-pl').disabled = !$('new-pl-name').value.trim(); });
+  $('create-pl').addEventListener('click', createPlaylist);
+
+  $('btn-play').addEventListener('click', togglePlay);
+  $('btn-next').addEventListener('click', function () { nextSong(true); });
+  $('btn-prev').addEventListener('click', prevSong);
+  $('btn-shuffle').addEventListener('click', function () { shuffle = !shuffle; renderPlayer(); });
+  $('btn-repeat').addEventListener('click', function () {
+    repeat = repeat === 'off' ? 'all' : repeat === 'all' ? 'one' : 'off';
+    renderPlayer();
+  });
+
+  $('seek').addEventListener('input', function () {
+    if (isFinite(audio.duration)) audio.currentTime = Number($('seek').value);
+  });
+  $('volume').addEventListener('input', function () { audio.volume = Number($('volume').value) / 100; });
+
+  audio.addEventListener('timeupdate', function () {
+    $('time-now').textContent = formatTime(audio.currentTime);
+    if (isFinite(audio.duration)) {
+      $('seek').value = String(Math.floor(audio.currentTime));
+    }
+  });
+  audio.addEventListener('loadedmetadata', function () {
+    var d = isFinite(audio.duration) ? audio.duration : 0;
+    $('time-total').textContent = formatTime(d);
+    $('seek').max = String(Math.floor(d));
+    $('seek').disabled = !d;
+    $('seek').setAttribute('aria-label', 'गाने में आगे-पीछे जाएँ, कुल ' + formatTime(d));
+  });
+  audio.addEventListener('ended', function () {
+    if (repeat === 'one') {
+      audio.currentTime = 0;
+      audio.play().then(function () { setPlaying(true); }).catch(function () { setPlaying(false); });
+    } else {
+      nextSong(false);
+    }
+  });
+  audio.addEventListener('play', function () { setPlaying(true); });
+  audio.addEventListener('pause', function () { setPlaying(false); });
+
+  openIdbStore().catch(makeMemoryStore).then(function (s) {
+    store = s;
+    if (!s.persistent) $('storage-note').classList.remove('visually-hidden');
+    return Promise.all([refreshSongs(), refreshPlaylists()]);
+  }).then(function () {
+    refreshEstimate();
+    renderPlayer();
+  });
+
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
+})();
+</script>
+</body>
+</html>
